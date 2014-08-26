@@ -2,13 +2,15 @@
 import os
 import time
 import socket
+import json
+import traceback
 
 def gen_conf(path,setting,template):
 	if os.path.exists(path):
 		open(path+time.strftime(".%Y-%m-%d_%H:%M:%S",time.localtime()), "wb").write(open(path, "rb").read());
 	tpath="./redis_template/%s.conf"%template;
 	if not os.path.exists(tpath):
-		return False,"type=template_not_found;value=%s"%template;
+		return False,[{"type":"template_not_found","value":template}];
 	file=open(path,"w");
 	for  i in open(tpath).readlines() :
 		if i[0]=='#':
@@ -19,7 +21,7 @@ def gen_conf(path,setting,template):
 				file.write("%s %s\n"%(list[0],setting[list[0]]));
 			else:
 				file.write(i);
-	return True,"type=ok";
+	return True,[{"type":"ok"}]
 def send_redis(ip,port,cmds):
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
 	try:
@@ -41,7 +43,7 @@ def ping_redis(ip,port):
 
 def run_redis(request):
 	if len(request)<2 :
-		return False,"type=args_not_found;value=1";
+		return False,[{"type":"args_not_found","value":"1"}];
 	args=request[0];
 	template="default";
 	if "template" in args:
@@ -55,7 +57,7 @@ def run_redis(request):
 		setting['dbfilename']="%s.rdb"%port;
 		config_path="./redis_conf/%s.conf"%port;
 	else:
-		return False,"type=key_not_found;value=port";
+		return False,[{"type":"key_not_found","value":"port"}];
 	ok,msg=gen_conf(config_path,setting,template);
 	if not ok:
 		return False,msg;
@@ -63,55 +65,40 @@ def run_redis(request):
 	if result==0 :
 		for i in range(10):
 			if ping_redis("127.0.0.1",port):
-				return True,"type=ok";
+				return True,[{"type":"ok"}]
 			time.sleep(0.1);
-	return False,"type=run_faild;value=%d"%result;
+	return False,[{"type":"run_faild","value":result}];
 
 def alive_redis(request):
-		result="";
+		result=[];
 		for filename in os.listdir('./redis_conf/'):
 			pat=filename.split(".");
 			if len(pat)==2 and pat[1]=="conf":
 				port=pat[0];
-				if result!="":
-					result=result+":";
 				ok=ping_redis("127.0.0.1",port);
-				result=result+"port=%s;alive=%s"%(port,ok);
+				result.append({"command":"alive","port":port,"type":"redis","alive":ok});
 		return True,result;
-
-def decode_command(command):
-	result=[];
-	commands=command.split(":");
-	for i in commands:
-		item={};
-		fields=i.split(";");
-		for f in fields:
-			field=f.split("=");
-			if len(field)>1:
-				item[field[0]]=field[1].strip();
-		result.append(item);
-	return result;
 
 def shutdown(request):
 	if len(request)<2:
-		return False,"type=args_not_found;value=1";
+		return False,[{"type":"args_not_found","value":"1"}];
 	if not "port" in request[1]:
-		return False,"type=key_not_found;value=port";
+		return False,[{"type":"key_not_found","value":"port"}];
 	port=request[1]['port'];
 	send_redis("127,0.0.1",port,"shutdown\r\n");
 	for i in range(10):
 		if not ping_redis("127.0.0.1",port):
-			return True,"type=ok";
+			return True,[{"type":"ok"}];
 		time.sleep(0.1);
-	return False,"type=shutdown_failed;value=unknow";
+	return False,[{"type":"shutdown_failed","value":"unknow"}];
 
 
 def run_command(request):
-	request=decode_command(request);
+	request=json.loads(request);
 	if len(request)<1:
 		return False;
 	if not 'command' in request[0]:
-		return False,"type=key_not_found;value=command";
+		return False,[{"type":"key_not_found","value":"command"}];
 	cmd=request[0]['command'];
 	path="";
 	if cmd=="run":
@@ -122,7 +109,7 @@ def run_command(request):
 		return shutdown(request);
 	if cmd=="update_template":
 		return update_template(request);
-	return False,"type=command_not_found;value=%s"%cmd;
+	return False,[{"type":"command_not_found","value":cmd}];
 
 def run_master(ip,port):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
@@ -130,9 +117,12 @@ def run_master(ip,port):
 		#sock.settimeout(2);
 		buffer="";
 		remain="";
+		sock.send(json.dumps([{"command":"init","type":"worker"}])+"\n");
 		while True:
 			recv=sock.recv(10240);
-			request=recv.split("\n");
+			data=recv.split("\n");
+			if data:
+				buffer=buffer+data;
 			if len(request)>1:
 				buffer=buffer+request[0];
 				remain=request[1];
@@ -144,7 +134,7 @@ def run_master(ip,port):
 			if not ok:
 				print buffer;
 				print msg;
-			sock.send(msg+"\n");
+			sock.send(json.dumps(msg)+"\n");
 			buffer=remain;
 			remain="";
 			if not recv:
@@ -157,6 +147,10 @@ while True:
 		run_master(ip,port);
 	except socket.error,msg:
 		print "connect to master:(%s %s)"%(ip,port),msg[0];
+		time.sleep(1);
+		continue;
+	except:
+		traceback.print_exc();
 		time.sleep(1);
 		continue;
 #print run_command("command=shutdown:port=5001\n");
