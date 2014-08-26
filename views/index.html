@@ -1,0 +1,38 @@
+<html>
+	<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<script language='javascript' src='js/compiled.js' ></script>
+	<script language='javascript' >
+		function run_command(cmd)
+		{
+			$.post("command",JSON.stringify(cmd),
+			function(data){
+				$("#data").html(JSON.stringify(data));
+			}, "json");
+		}
+		run_command([{command:"list"}]);
+
+	</script>
+	</head>
+	<body>
+		<div class="navbar navbar-inverse navbar-fixed-top">
+			<div class="navbar-inner">
+				<div class="container-fluid">
+					<div class="nav-collapse collapse">
+						<ul class="nav">
+							<!--li class="active"><a href="#">主页</a></li-->
+							<li><a href="show_server">活动</a></li>
+							<li><a href="">队伍</a></li>
+						</ul>
+					</div><!--/.nav-collapse -->
+				</div>
+			</div>
+		</div>
+		<button type="button" class="btn btn-lg btn-default">Default</button>
+		<button type="button" class="btn btn-lg btn-primary">Primary</button>
+		<div id="data">
+
+		</div>
+		it's works
+	</body>
+</html>
