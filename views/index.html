@@ -1,6 +1,7 @@
 <html>
 	<head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<link href="css/bootstrap.css" rel="stylesheet">
 	<script language='javascript' src='js/compiled.js' ></script>
 	<script language='javascript' >
 		function run_command(cmd)
@@ -21,18 +22,21 @@
 					<div class="nav-collapse collapse">
 						<ul class="nav">
 							<!--li class="active"><a href="#">主页</a></li-->
-							<li><a href="show_server">活动</a></li>
-							<li><a href="">队伍</a></li>
+							<li><a href="show_server">服务</a></li>
+							<li><a href="show_business">业务</a></li>
+							<li><a href="show_machine">机器</a></li>
 						</ul>
 					</div><!--/.nav-collapse -->
 				</div>
 			</div>
 		</div>
-		<button type="button" class="btn btn-lg btn-default">Default</button>
-		<button type="button" class="btn btn-lg btn-primary">Primary</button>
-		<div id="data">
-
+		<div class="container" style="padding-top: 40px;">
+			<button type="button" class="btn btn-lg btn-default">Default</button>
+			<button type="button" class="btn btn-lg btn-primary">Primary</button>
+			<div id="data"> </div>
+			<div id="machinelist"> </div>
+			<div id="businesslist"> </div>
+			<div id="serverlist"> </div>
 		</div>
-		it's works
 	</body>
 </html>

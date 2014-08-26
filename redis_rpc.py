@@ -116,27 +116,21 @@ def run_master(ip,port):
 		sock.connect((ip, int(port)));
 		#sock.settimeout(2);
 		buffer="";
-		remain="";
 		sock.send(json.dumps([{"command":"init","type":"worker"}])+"\n");
 		while True:
 			recv=sock.recv(10240);
-			data=recv.split("\n");
-			if data:
-				buffer=buffer+data;
-			if len(request)>1:
-				buffer=buffer+request[0];
-				remain=request[1];
-			elif len(request)>0:
-				buffer=buffer+request[0]
-			else:
-				break;
-			ok,msg=run_command(buffer);
+			if recv:
+				buffer=buffer+recv;
+			if buffer.find("\n")<0:
+				continue;
+			pos=buffer.find("\n");
+			data=buffer[0:pos];
+			buffer=buffer[pos+1:];
+			ok,msg=run_command(data);
 			if not ok:
 				print buffer;
 				print msg;
 			sock.send(json.dumps(msg)+"\n");
-			buffer=remain;
-			remain="";
 			if not recv:
 				break;
 		print("connect end");
