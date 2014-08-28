@@ -78,6 +78,19 @@ def alive_redis(request):
 				ok=ping_redis("127.0.0.1",port);
 				result.append({"command":"alive","port":port,"type":"redis","alive":ok});
 		return True,result;
+def start_redis(request):
+	if len(request)<1 :
+		return False,[{"type":"args_not_found","value":"1"}];
+	setting=request[0];
+	port=setting['port'];
+	config_path="./redis_conf/%s.conf"%port;
+	result=os.system("redis-server %s"%config_path);
+	if result==0 :
+		for i in range(10):
+			if ping_redis("127.0.0.1",port):
+				return True,[{"type":"ok"}]
+			time.sleep(0.1);
+	return False,[{"type":"run_faild","value":result}];
 
 def shutdown(request):
 	if len(request)<2:

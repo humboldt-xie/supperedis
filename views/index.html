@@ -4,16 +4,40 @@
 	<link href="css/bootstrap.css" rel="stylesheet">
 	<script language='javascript' src='js/compiled.js' ></script>
 	<script language='javascript' >
-		function run_command(cmd)
+		function run_command(cmd,callback)
 		{
 			$.post("command",JSON.stringify(cmd),
 			function(data){
 				$("#data").html(JSON.stringify(data));
+				callback(data);
 			}, "json");
 		}
-		run_command([{command:"list"}]);
+		run_command([{command:"list"}],function(data){
+			service_list=[];
+			for(i in data[0]){
+				service_list.push(data[0][i]);
+			}
+			template=$("#servicelist_tpl").html();
+			var rendered = Mustache.render(template, {service_list:service_list});
+			$("#data").html(rendered);
+		});
 
 	</script>
+	<style>
+		.show-grid {
+			margin-top: 10px;
+			margin-bottom: 20px;
+		}
+		.show-grid [class*="span"] {
+			background-color: #eee;
+			text-align: center;
+			-webkit-border-radius: 3px;
+			-moz-border-radius: 3px;
+			border-radius: 3px;
+			min-height: 40px;
+			line-height: 40px;
+		}
+	</style>
 	</head>
 	<body>
 		<div class="navbar navbar-inverse navbar-fixed-top">
@@ -38,5 +62,19 @@
 			<div id="businesslist"> </div>
 			<div id="serverlist"> </div>
 		</div>
+		<script id="servicelist_tpl" type="text">
+			<div class="bs-docs-grid">
+				{{#service_list}}
+				<div class="row show-grid">
+					<div class="span3">{{name}}</div>
+					<div class="span1">{{type}}</div>
+					<div class="span1">{{port}}</div>
+					<div class="span1">{{alive}}</div>
+					<div class="span1"><button type="button" class="btn btn-lg btn-primary">重启</button></div>
+					<div class="span1"><button type="button" class="btn btn-lg btn-primary">关闭</button></div>
+				</div>
+				{{/service_list}}
+			</div>
+		</script>
 	</body>
 </html>
